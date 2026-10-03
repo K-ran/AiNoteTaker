@@ -35,12 +35,14 @@ Updating a board that already runs P0? Write `notetaker-p0-0.1.2-app.bin` at `0x
 ## 2. Set it up from your phone
 
 1. Hold **KEY 1** and **KEY 3** together for **10 seconds**, until the light pulses slowly blue. The hotspot stays open for 15 minutes.
+
+   <img src="images/buttons-key1-key3.jpg" alt="Edge of the board with KEY 1 (nearest the brass standoff) and KEY 3 (two buttons above it) circled" width="300">
 2. On your phone, join the Wi-Fi network `NoteTaker-xxxx`. The last four characters are different on each device. The password is `notetaker-p0`. Ignore any "no internet" warning.
 3. Open **http://192.168.4.1** in the phone's browser. Use http, not https.
 4. Pick the store Wi-Fi (or type its name), then enter its password, the store name, the name of the person carrying the device, and the API token.
 5. Press **Save and connect**. The device tests the Wi-Fi first and saves nothing unless it connects. On success the hotspot closes after 30 seconds and the white blink returns.
 
-<img src="images/setup-page.png" alt="Setup page with fields for store Wi-Fi, password, store name, salesperson and API token" width="320">
+<img src="images/setup-page.png" alt="Setup page on a phone at 192.168.4.1, with fields for store Wi-Fi, password, store name, salesperson and API token" width="300">
 
 Afterwards, reconnect your phone to its normal Wi-Fi.
 
@@ -61,7 +63,7 @@ All seven LEDs show the same state. Uploading never changes the light.
 
 ## 4. Buttons
 
-KEY 1 to KEY 3 are the three user buttons, not BOOT or RESET.
+The buttons sit on the edge of the board. KEY 1 is nearest the brass standoff, KEY 2 is next to it, and KEY 3 is the one after that (see the photo in step 2). BOOT and RESET are separate buttons.
 
 | Button | What it does |
 | --- | --- |
