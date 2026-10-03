@@ -1,94 +1,106 @@
-# Note Taker P0: setup and daily use
+# Note Taker P0 field guide
 
-The device records conversations all day, saves them to its memory card, and uploads them to Smaarthi every 15 minutes over Wi-Fi. Each upload becomes a conversation in Smaarthi. Files are deleted from the card only after Smaarthi has them.
+Flash a board, connect it to a store's Wi-Fi from your phone, and check that recordings reach Smaarthi. About ten minutes per device.
 
-This is the **P0 pilot** build: a developer build on the prototype board. Read "Known limits" before handing a device to a store.
+| Firmware | Board | Audio | Uploads |
+| --- | --- | --- | --- |
+| 0.1.0-p0 | Waveshare ESP32-S3-AUDIO-Board | Opus 24 kbps, 10-minute files | Every 15 minutes |
 
-## What you need
+## Before you start
 
-- A board flashed with firmware 0.1.0-p0 ([flashing guide](FLASHING.md)), with a microSD card (16 GB or more) inserted and the battery connected.
-- A phone.
-- The store's **2.4 GHz** Wi-Fi name and password. 5 GHz-only networks and guest Wi-Fi with an "accept terms" page don't work.
-- The **P0 API token** (a long text starting `eyJ…`). Ask the project lead; it is shared privately, never in chat or email.
-- The developer setup code: **`notetaker-p0`**.
+- **The board:** microSD card (16 GB or more) inserted, battery connected, and a USB-C **data** cable.
+- **Store Wi-Fi:** a 2.4 GHz network with a password. 5 GHz-only networks and guest Wi-Fi with an "accept terms" page won't work.
+- **P0 API token:** a long text starting `eyJ`. Get it privately from the project lead, never by chat or email.
+- **Setup code:** the hotspot password for every P0 device is `notetaker-p0`.
 
-## 1. Switch on
+## 1. Flash the board
 
-Turn the board on. Within a few seconds the light starts a **dim white blink every 5 seconds**: it is recording. It records even before it has Wi-Fi, and keeps the audio until it can upload.
+Download `notetaker-p0-0.1.0-full.bin` from the release [v0.1.0-p0](https://github.com/K-ran/AiNoteTaker/releases/tag/v0.1.0-p0).
+
+1. Plug the board in with a USB-C data cable.
+2. In Chrome or Edge, open **https://espressif.github.io/esptool-js/** and press **Connect**. Pick the port named like `cu.usbmodem…` (Mac) or `COM5` (Windows).
+3. Press **Erase Flash** and wait for it to finish.
+4. Set **Flash Address** to `0x0`, choose the `-full.bin` file, and press **Program**. It takes about 30 seconds.
+5. Press the board's **RESET** button. A dim white blink every 5 seconds means it is recording.
+
+Prefer the command line?
+
+```sh
+esptool.py --chip esp32s3 -p PORT erase_flash
+esptool.py --chip esp32s3 -p PORT -b 460800 write_flash 0x0 notetaker-p0-0.1.0-full.bin
+```
+
+Updating a board that already runs P0? Write `notetaker-p0-0.1.0-app.bin` at `0x20000` instead; it keeps the device's Wi-Fi, names and token. More detail: [FLASHING.md](FLASHING.md).
+
+## 2. Set it up from your phone
+
+1. Hold **KEY 1** and **KEY 3** together for **10 seconds**, until the light pulses slowly blue. The hotspot stays open for 15 minutes.
+2. On your phone, join the Wi-Fi network `NoteTaker-xxxx`. The last four characters are different on each device. The password is `notetaker-p0`. Ignore any "no internet" warning.
+3. Open **http://192.168.4.1** in the phone's browser. Use http, not https.
+4. Pick the store Wi-Fi (or type its name), then enter its password, the store name, the name of the person carrying the device, and the API token.
+5. Press **Save and connect**. The device tests the Wi-Fi first and saves nothing unless it connects. On success the hotspot closes after 30 seconds and the white blink returns.
+
+<img src="images/setup-page.png" alt="Setup page with fields for store Wi-Fi, password, store name, salesperson and API token" width="320">
+
+Afterwards, reconnect your phone to its normal Wi-Fi.
+
+## 3. Read the status light
+
+All seven LEDs show the same state. Uploading never changes the light.
 
 ![Status light meanings](images/status-light.svg)
 
-## 2. Open the setup hotspot
-
-Hold **KEY 1 and KEY 3 together for 10 seconds**. KEY 1–3 are the three user buttons, not BOOT or RESET. The light changes to a **slow blue pulse**. The hotspot stays open for 15 minutes.
-
-## 3. Connect your phone
-
-1. On your phone, open Wi-Fi settings and join **`NoteTaker-xxxx`**. The last four characters are unique to each device. The password is **`notetaker-p0`**.
-2. Your phone may warn "no internet". That's expected; stay connected.
-3. Open a browser and go to **http://192.168.4.1**.
-
-## 4. Fill in the form
-
-![Setup page](images/setup-page.png)
-
-| Field | What to enter |
+| Light | Meaning |
 | --- | --- |
-| Store Wi-Fi | Pick the network, or type its name in the box below |
-| Wi-Fi password | The store Wi-Fi password |
-| Store name | e.g. `Indiranagar` (letters, numbers and dashes work best) |
-| Salesperson | Who carries this device, e.g. `Priya` |
-| API token | Paste the P0 token. Leave it empty to keep the current one |
+| Dim white blink, every 5 s | Recording normally. Nothing to do. |
+| Steady amber | Privacy pause. Press KEY 1 to resume, or wait 10 minutes. |
+| Red blink, every 5 s | Needs attention: uploads stuck for 4 hours, a memory card problem, or the token was rejected. |
+| Slow blue pulse | Setup hotspot is open. |
+| Green for 3 s (after KEY 2) | Uploads are healthy. Red for 3 s means they are not. |
+| Dark | Switched off or battery flat. Everything recorded so far is kept. |
 
-Press **Save and connect**. The device tests the Wi-Fi first and **saves only if the connection works**. You'll see either:
+## 4. Buttons
 
-- *"Connected to … Setup done"*: the hotspot closes after 30 seconds, and the light goes back to the white blink.
-- *"Could not connect"*: check the network name and password, then press Save again.
+KEY 1 to KEY 3 are the three user buttons, not BOOT or RESET.
 
-Reconnect your phone to its normal Wi-Fi.
+| Button | What it does |
+| --- | --- |
+| KEY 1, press | Privacy pause on or off. Resumes by itself after 10 minutes. |
+| KEY 2, press | Shows upload health for 3 seconds: green or red. |
+| KEY 1 + KEY 3, hold 10 s | Opens the setup hotspot to change Wi-Fi, names or token. |
 
 ## 5. Daily use
 
-- **Nothing to start.** The device records whenever it's on. It uploads every 15 minutes, with Wi-Fi switched off in between to save battery.
-- **Privacy pause:** press **KEY 1** once. The light turns **steady amber**. Press again to resume; it also resumes by itself after 10 minutes.
-- **Status check:** press **KEY 2**. The light shows **green for 3 seconds** if uploads are healthy, **red** if not.
+- **Nothing to start.** The device records whenever it's on. Wi-Fi switches on only to upload, every 15 minutes, to save battery.
 - **Charge** it at the end of each shift.
-- **Wi-Fi password changed?** Repeat steps 2 to 4. No audio is lost in the meantime: it waits on the card.
+- **If the store changes its Wi-Fi password**, repeat step 2. Recordings wait on the card in the meantime, so nothing is lost.
 
-## Viewing recordings (team)
+## 6. Check the recordings
 
-Each upload appears in Smaarthi as a conversation, with a file name like:
+Each 10-minute file becomes a conversation in Smaarthi, named so you can tell where it came from:
 
 ```
 nt-288485b2ae28_Indiranagar_Priya_00000140_20261003T162355Z.ogg
-device id       store       person  seq      start time (UTC)
+device id       store       person seq      start time (UTC)
 ```
 
-For a quick listen, the repo includes a local viewer:
-
-```sh
-python3 tools/recordings_viewer.py --events "/Volumes/NO NAME/LOG/EVENTS.LOG"   # from the device's SD card
-python3 tools/recordings_viewer.py --serial /dev/cu.usbmodem1101                # live, device plugged in
-# then open http://localhost:8080
-```
-
-![Recordings viewer](images/recordings-viewer.png)
+Files are deleted from the device only after Smaarthi has them.
 
 ## Troubleshooting
 
-| What you see | What it means | What to do |
+| What you see | Likely cause | What to do |
 | --- | --- | --- |
-| Red blink every 5 s | Uploads stuck for 4 h, memory card problem, or token rejected | Check Wi-Fi and token (redo setup). Check the card is seated. |
-| No `NoteTaker-xxxx` network | Hotspot not open | Hold KEY 1 + KEY 3 for a full 10 s until the light pulses blue |
-| Page doesn't load | Phone switched back to its normal Wi-Fi | Rejoin `NoteTaker-xxxx`, then open `http://192.168.4.1` (http, not https) |
-| "Could not connect" | Wrong password, 5 GHz-only network, or a sign-in page | Use the staff 2.4 GHz network |
-| Light dark | Off or battery flat | Charge. The device keeps everything recorded so far. |
+| Flashing says "No serial data received" | Board not in download mode, or a charge-only cable | Replug the cable. If it still fails: hold BOOT, tap RESET, release BOOT, then flash again. |
+| No `NoteTaker-xxxx` network | Hotspot not open | Hold KEY 1 + KEY 3 for the full 10 seconds until the light pulses blue. |
+| The page at 192.168.4.1 won't load | Phone switched back to its normal Wi-Fi | Rejoin `NoteTaker-xxxx` and open the address with http. |
+| "Could not connect" | Wrong password, 5 GHz-only network, or a sign-in page | Use the staff 2.4 GHz network and try again. |
+| Red blink every 5 s | Uploads stuck, card problem, or token rejected | Redo setup with the right Wi-Fi and token, and check the card is seated. |
 
 ## Known limits of P0
 
-- **Audio links are public.** Anyone who has a recording's link can play it, until the backend makes storage private. Treat links as confidential.
-- **One shared login token** on every P0 device. If a device is lost, tell the project lead the same day so the token can be rotated.
-- **The memory card is not encrypted yet** (P1).
-- **No remote monitoring or remote updates yet** (P1). Updates are done over USB.
-- **One conversation per 10-minute file**: conversations are not stitched yet (P2).
+- **Audio links are public.** Anyone with a recording's link can play it until the backend makes storage private. Keep links inside the team.
+- **One shared token** on every P0 device. Report a lost device to the project lead the same day so the token can be rotated.
+- **The memory card is not encrypted yet.** That comes in P1.
+- **No remote monitoring or over-the-air updates yet** (P1). Updates are done over USB.
+- **One conversation per 10-minute file.** Joining them into real conversations comes in P2.
 - **Battery level isn't measured** on this board revision.
