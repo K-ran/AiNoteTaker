@@ -4,7 +4,7 @@ Flash a board, connect it to a store's Wi-Fi from your phone, and check that rec
 
 | Firmware | Board | Audio | Uploads |
 | --- | --- | --- | --- |
-| 0.1.0-p0 | Waveshare ESP32-S3-AUDIO-Board | Opus 24 kbps, 10-minute files | Every 15 minutes |
+| 0.1.1-p0 | Waveshare ESP32-S3-AUDIO-Board | Opus 24 kbps, 10-minute files | Every 15 minutes |
 
 ## Before you start
 
@@ -15,7 +15,7 @@ Flash a board, connect it to a store's Wi-Fi from your phone, and check that rec
 
 ## 1. Flash the board
 
-Download `notetaker-p0-0.1.0-full.bin` from the release [v0.1.0-p0](https://github.com/K-ran/AiNoteTaker/releases/tag/v0.1.0-p0).
+Download `notetaker-p0-0.1.1-full.bin` from the release [v0.1.1-p0](https://github.com/K-ran/AiNoteTaker/releases/tag/v0.1.1-p0).
 
 1. Plug the board in with a USB-C data cable.
 2. In Chrome or Edge, open **https://espressif.github.io/esptool-js/** and press **Connect**. Pick the port named like `cu.usbmodem…` (Mac) or `COM5` (Windows).
@@ -27,10 +27,10 @@ Prefer the command line?
 
 ```sh
 esptool.py --chip esp32s3 -p PORT erase_flash
-esptool.py --chip esp32s3 -p PORT -b 460800 write_flash 0x0 notetaker-p0-0.1.0-full.bin
+esptool.py --chip esp32s3 -p PORT -b 460800 write_flash 0x0 notetaker-p0-0.1.1-full.bin
 ```
 
-Updating a board that already runs P0? Write `notetaker-p0-0.1.0-app.bin` at `0x20000` instead; it keeps the device's Wi-Fi, names and token. More detail: [FLASHING.md](FLASHING.md).
+Updating a board that already runs P0? Write `notetaker-p0-0.1.1-app.bin` at `0x20000` instead; it keeps the device's Wi-Fi, names and token. More detail: [FLASHING.md](FLASHING.md).
 
 ## 2. Set it up from your phone
 

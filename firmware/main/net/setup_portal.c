@@ -78,13 +78,28 @@ static void set_result(const char *fmt, const char *arg)
 // interface while the station is connected, where the setup code gives no protection.
 static bool from_hotspot(httpd_req_t *req)
 {
-    struct sockaddr_in local;
-    socklen_t len = sizeof(local);
+    // httpd listens on a dual-stack IPv6 socket, so IPv4 clients show up as
+    // IPv4-mapped addresses (::ffff:192.168.4.1). Handle both forms.
+    struct sockaddr_storage ss;
+    socklen_t len = sizeof(ss);
     esp_netif_ip_info_t ap;
     esp_netif_t *apif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
-    if (getsockname(httpd_req_to_sockfd(req), (struct sockaddr *)&local, &len) != 0 || !apif ||
+    if (getsockname(httpd_req_to_sockfd(req), (struct sockaddr *)&ss, &len) != 0 || !apif ||
         esp_netif_get_ip_info(apif, &ap) != ESP_OK) return false;
-    return local.sin_addr.s_addr == ap.ip.addr;
+    uint32_t local = 0;
+    if (ss.ss_family == AF_INET) {
+        local = ((struct sockaddr_in *)&ss)->sin_addr.s_addr;
+    } else if (ss.ss_family == AF_INET6) {
+        const uint8_t *a = ((struct sockaddr_in6 *)&ss)->sin6_addr.s6_addr;
+        static const uint8_t mapped[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff};
+        if (memcmp(a, mapped, sizeof(mapped)) == 0) memcpy(&local, a + 12, 4);
+    }
+    if (local != ap.ip.addr) {
+        ESP_LOGW(TAG, "refused request to %s (local " IPSTR ", family %d): not from the hotspot",
+                 req->uri, IP2STR((esp_ip4_addr_t *)&local), ss.ss_family);
+        return false;
+    }
+    return true;
 }
 
 #define REQUIRE_HOTSPOT(req) \
