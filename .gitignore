@@ -1,0 +1,28 @@
+# Vendor reference material (read-only copy; contains an API token and large CAD/binaries)
+references/
+Claude outputs/
+
+# Build output and fetched components
+firmware/build/
+firmware/managed_components/
+firmware/sdkconfig.old
+firmware/dependencies.lock.bak
+
+# Local secrets and recordings
+**/secrets.h
+*.env
+server/recordings/
+tools/recordings.json
+tools/*.log
+
+# Editor/OS
+.DS_Store
+.vscode/
+firmware/.vscode/
+__pycache__/
+
+# Release binaries go to GitHub releases
+firmware/release/
+.cache/
+**/.cache/
+firmware/compile_commands.json

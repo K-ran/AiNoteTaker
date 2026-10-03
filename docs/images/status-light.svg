@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 340" font-family="-apple-system,Segoe UI,sans-serif" font-size="15">
+  <rect width="640" height="340" fill="#f6f5f0"/>
+  <text x="24" y="34" font-size="18" font-weight="600" fill="#16262b">Status light (all 7 LEDs show the same thing)</text>
+  <g>
+    <circle cx="44" cy="74" r="13" fill="#fffdf5" stroke="#9a968a" stroke-width="2"/>
+    <text x="72" y="79" fill="#16262b"><tspan font-weight="600">Dim white blink, every 5 s</tspan> — recording normally</text>
+    <circle cx="44" cy="118" r="13" fill="#e39a2d"/>
+    <text x="72" y="123" fill="#16262b"><tspan font-weight="600">Steady amber</tspan> — privacy pause (resumes by itself after 10 min)</text>
+    <circle cx="44" cy="162" r="13" fill="#cc3d2a" stroke="#fbfaf6" stroke-width="3" stroke-dasharray="4 3"/>
+    <text x="72" y="167" fill="#16262b"><tspan font-weight="600">Red blink, every 5 s</tspan> — needs attention (card, mic or uploads)</text>
+    <circle cx="44" cy="206" r="13" fill="#2f6fcc"/>
+    <text x="72" y="211" fill="#16262b"><tspan font-weight="600">Slow blue pulse</tspan> — setup hotspot is open</text>
+    <circle cx="44" cy="250" r="13" fill="#2f9a4f"/>
+    <text x="72" y="255" fill="#16262b"><tspan font-weight="600">Green for 3 s</tspan> (after KEY 2) — uploads healthy; <tspan font-weight="600">red for 3 s</tspan> — not</text>
+    <circle cx="44" cy="294" r="13" fill="#2b3236"/>
+    <text x="72" y="299" fill="#16262b"><tspan font-weight="600">Dark</tspan> — switched off or battery flat</text>
+  </g>
+</svg>

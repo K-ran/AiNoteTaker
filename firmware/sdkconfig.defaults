@@ -1,0 +1,39 @@
+# Board
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Partitions: A/B OTA + coredump + spare FAT (see partitions.csv)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+
+# The bootloader can't be updated over the air, so enable rollback support now
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Crash diagnostics: core dump to flash (uploaded from P1)
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
+CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
+CONFIG_ESP_TASK_WDT_PANIC=y
+
+# Allocations above 4 KB go to PSRAM first; keeps internal RAM for Wi-Fi/TLS
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# HTTPS: certificate bundle; phones send long headers to the setup page
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+
+# Console on the native USB port (board has no USB-UART bridge)
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Two NTP servers (pool.ntp.org, time.google.com)
+CONFIG_LWIP_SNTP_MAX_SERVERS=2
+
+# Catch stack overflows as a clean panic instead of memory corruption
+CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
