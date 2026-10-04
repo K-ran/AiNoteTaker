@@ -4,18 +4,19 @@ Flash a board, connect it to a store's Wi-Fi from your phone, and check that rec
 
 | Firmware | Board | Audio | Uploads |
 | --- | --- | --- | --- |
-| 0.1.2-p0 | Waveshare ESP32-S3-AUDIO-Board | Opus 24 kbps, 10-minute files | Every 15 minutes |
+| 0.1.3-p0 | Waveshare ESP32-S3-AUDIO-Board | Opus 24 kbps, 10-minute files | Every 15 minutes |
 
 ## Before you start
 
 - **The board:** microSD card (16 GB or more) inserted, battery connected, and a USB-C **data** cable.
 - **Store Wi-Fi:** a 2.4 GHz network with a password. 5 GHz-only networks and guest Wi-Fi with an "accept terms" page won't work.
 - **P0 API token:** a long text starting `eyJ`. Get it privately from the project lead, never by chat or email.
+- **Smaarthi device ID:** each device has its own ID registered in Smaarthi (25 lowercase letters and digits, starting with `cm`). Get the one for your device from the project lead.
 - **Setup code:** the hotspot password for every P0 device is `notetaker-p0`.
 
 ## 1. Flash the board
 
-Download `notetaker-p0-0.1.2-full.bin` from the release [v0.1.2-p0](https://github.com/K-ran/AiNoteTaker/releases/tag/v0.1.2-p0).
+Download `notetaker-p0-0.1.3-full.bin` from the release [v0.1.3-p0](https://github.com/K-ran/AiNoteTaker/releases/tag/v0.1.3-p0).
 
 1. Plug the board in with a USB-C data cable.
 2. In Chrome or Edge, open **https://espressif.github.io/esptool-js/** and press **Connect**. Pick the port named like `cu.usbmodem…` (Mac) or `COM5` (Windows).
@@ -27,10 +28,10 @@ Prefer the command line?
 
 ```sh
 esptool.py --chip esp32s3 -p PORT erase_flash
-esptool.py --chip esp32s3 -p PORT -b 460800 write_flash 0x0 notetaker-p0-0.1.2-full.bin
+esptool.py --chip esp32s3 -p PORT -b 460800 write_flash 0x0 notetaker-p0-0.1.3-full.bin
 ```
 
-Updating a board that already runs P0? Write `notetaker-p0-0.1.2-app.bin` at `0x20000` instead; it keeps the device's Wi-Fi, names and token. More detail: [FLASHING.md](FLASHING.md).
+Updating a board that already runs P0? Write `notetaker-p0-0.1.3-app.bin` at `0x20000` instead; it keeps the device's Wi-Fi, names and token. More detail: [FLASHING.md](FLASHING.md).
 
 ## 2. Set it up from your phone
 
@@ -39,7 +40,7 @@ Updating a board that already runs P0? Write `notetaker-p0-0.1.2-app.bin` at `0x
    <img src="images/buttons-key1-key3.jpg" alt="Edge of the board with KEY 1 (nearest the brass standoff) and KEY 3 (two buttons above it) circled" width="300">
 2. On your phone, join the Wi-Fi network `NoteTaker-xxxx`. The last four characters are different on each device. The password is `notetaker-p0`. Ignore any "no internet" warning.
 3. Open **http://192.168.4.1** in the phone's browser. Use http, not https.
-4. Pick the store Wi-Fi (or type its name), then enter its password, the store name, the name of the person carrying the device, and the API token.
+4. Pick the store Wi-Fi (or type its name), then enter its password, the store name, the name of the person carrying the device, the **Smaarthi device ID**, and the API token. Leave the token empty if the device already has one.
 5. Press **Save and connect**. The device tests the Wi-Fi first and saves nothing unless it connects. On success the hotspot closes after 30 seconds and the white blink returns.
 
 <img src="images/setup-page.png" alt="Setup page on a phone at 192.168.4.1, with fields for store Wi-Fi, password, store name, salesperson and API token" width="300">
@@ -96,7 +97,7 @@ Files are deleted from the device only after Smaarthi has them.
 | No `NoteTaker-xxxx` network | Hotspot not open | Hold KEY 1 + KEY 3 for the full 10 seconds until the light pulses blue. |
 | The page at 192.168.4.1 won't load | Phone switched back to its normal Wi-Fi | Rejoin `NoteTaker-xxxx` and open the address with http. |
 | "Could not connect" | Wrong password, 5 GHz-only network, or a sign-in page | Use the staff 2.4 GHz network and try again. |
-| Red blink every 5 s | Uploads stuck, card problem, or token rejected | Redo setup with the right Wi-Fi and token, and check the card is seated. |
+| Red blink every 5 s | Uploads stuck, card problem, or token rejected | Redo setup with the right Wi-Fi, device ID and token, and check the card is seated. |
 
 ## Known limits of P0
 

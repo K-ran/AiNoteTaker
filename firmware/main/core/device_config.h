@@ -15,6 +15,10 @@ esp_err_t config_set_names(const char *store, const char *salesperson);
 esp_err_t config_set_token(const char *token);    // trims whitespace; rejects non-token characters
 // Copies the token into buf (caller scrubs with explicit_bzero). Returns false if unset.
 bool config_copy_token(char *buf, size_t len);
+// Smaarthi device id (issued by the backend, 25 lowercase alphanumerics starting "cm").
+// Sent as deviceId in createConversation. Empty string clears it.
+esp_err_t config_set_backend_id(const char *id);
+void config_get_backend_id(char *buf, size_t len);
 bool config_has_token(void);
 void config_get_wifi(char *ssid, size_t ssid_len, char *pass, size_t pass_len);
 

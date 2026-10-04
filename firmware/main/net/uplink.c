@@ -66,7 +66,7 @@ static void set_str(cJSON *m, const char *k, const char *v)
 static bool in_state(cJSON *m, const char *s) { return !strcmp(meta_str(m, "state"), s); }
 
 // One chunk through the four API calls, resuming from the state in its sidecar.
-static api_result_t upload_chunk(uint32_t seq, const char *token)
+static api_result_t upload_chunk(uint32_t seq, const char *token, const char *backend_id)
 {
     cJSON *m = chunk_meta_load(seq);
     if (!m) return API_LOCAL;
@@ -93,13 +93,14 @@ static api_result_t upload_chunk(uint32_t seq, const char *token)
     if (r == API_OK && in_state(m, "ASSET")) {
         char *url = malloc(256);
         if (!url) r = API_LOCAL;
-        else r = api_create_conversation(token, meta_str(m, "asset_id"), conv, sizeof(conv), url, 256);
+        else r = api_create_conversation(token, meta_str(m, "asset_id"), backend_id, conv, sizeof(conv), url, 256);
         if (r == API_OK) {
             set_str(m, "conversation_id", conv);
             set_str(m, "state", "DONE");
             chunk_meta_save(seq, m);
             // The recordings viewer (tools/recordings_viewer.py) is built from these lines.
             event_log("uploaded", "seq=%lu conv=%s url=%s", (unsigned long)seq, conv, url);
+            if (backend_id[0]) event_log("uploaded_device", "seq=%lu deviceId=%s", (unsigned long)seq, backend_id);
             event_log("uploaded_name", "seq=%lu name=%s", (unsigned long)seq, name);
         }
         free(url);
@@ -182,12 +183,14 @@ static void run_window(void)
     timekeep_wait_sync(5000);
 
     char *token = heap_caps_malloc(TOKEN_MAX, MALLOC_CAP_INTERNAL);
+    char backend_id[40];
+    config_get_backend_id(backend_id, sizeof(backend_id));
     uint32_t seqs[BATCH];
     int n = chunk_list_ready(seqs, BATCH), done = 0;
     api_result_t r = API_OK;
     if (token && config_copy_token(token, TOKEN_MAX)) {
         for (int i = 0; i < n; i++) {
-            r = upload_chunk(seqs[i], token);
+            r = upload_chunk(seqs[i], token, backend_id);
             if (r == API_OK) done++;
             else if (r == API_NET || r == API_SERVER || r == API_AUTH) break;   // retry next window
         }

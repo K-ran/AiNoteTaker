@@ -1,6 +1,6 @@
 # Note Taker firmware (P0)
 
-ESP-IDF v5.5 firmware for the Waveshare ESP32-S3-AUDIO-Board. It records all day (16 kHz mono, Opus 24 kbps in Ogg), stores audio on the SD card in 10-minute chunks, and uploads them every 15 minutes through the Smaarthi API (presigned URL → R2 PUT → createAsset → createConversation). A chunk is deleted only after its conversation exists.
+ESP-IDF v5.5 firmware for the Waveshare ESP32-S3-AUDIO-Board. It records all day (16 kHz mono, Opus 24 kbps in Ogg), stores audio on the SD card in 10-minute chunks, and uploads them every 15 minutes through the Smaarthi API (presigned URL → R2 PUT → createAsset → createConversation with the device's Smaarthi `deviceId`). A chunk is deleted only after its conversation exists.
 
 Design background: the AI Note Taker design doc and the "Counter Recorder: how it works" deck. Team docs: [flashing](../docs/FLASHING.md), [user guide](../docs/USER_GUIDE.md).
 
@@ -54,7 +54,7 @@ old_demos/            earlier experiments, not built
 
 ## Developer console (USB serial, 115200)
 
-`status | upload | rotate | pause | resume | setup | setup-off | reboot | wifi <ssid> <pass> | names <store> <sales> | token <jwt> | rec-clear yes`
+`status | upload | rotate | pause | resume | setup | setup-off | reboot | wifi <ssid> <pass> | names <store> <sales> | devid <smaarthi-device-id> | token <jwt> | rec-clear yes`
 
 Pass secrets through the environment so they stay out of shell history and logs:
 

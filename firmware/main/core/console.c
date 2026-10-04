@@ -26,8 +26,10 @@ static void cmd_status(void)
     chunk_store_space(&total, &free_mb);
     char t[24];
     timekeep_iso(t, sizeof(t));
-    printf("device %s fw %s boot %lu\n", config_device_id(), esp_app_get_description()->version,
-           (unsigned long)config_boot_id());
+    char devid[40];
+    config_get_backend_id(devid, sizeof(devid));
+    printf("device %s fw %s boot %lu  smaarthi deviceId %s\n", config_device_id(), esp_app_get_description()->version,
+           (unsigned long)config_boot_id(), devid[0] ? devid : "(none)");
     printf("time %s (%s)  rec %s  last seq %lu  level %.0f dBFS  overruns %lu\n", t[0] ? t : "-",
            timekeep_source_name(), recorder_state_name(), (unsigned long)recorder_last_seq(),
            capture_level_dbfs(), (unsigned long)capture_overruns());
@@ -61,13 +63,16 @@ static void handle(char *line)
         char *sales = strchr(arg, ' ');
         if (sales) *sales++ = 0;
         printf(config_set_names(arg, sales ? sales : "") == ESP_OK ? "names saved\n" : "names: too long\n");
+    } else if (!strcmp(line, "devid")) {                  // devid <smaarthi device id>; no argument clears it
+        esp_err_t err = config_set_backend_id(arg ? arg : "");
+        printf(err == ESP_OK ? "device id saved\n" : "device id rejected (lowercase letters and digits, max 39)\n");
     } else if (!strcmp(line, "token") && arg) {
         size_t n = strlen(arg);
         printf(config_set_token(arg) == ESP_OK ? "token saved (%u chars)\n" : "token rejected (length or characters)\n", (unsigned)n);
         explicit_bzero(arg, n);
     } else {
         printf("commands: status | upload | rotate | pause | resume | setup | setup-off | reboot |\n"
-               "          wifi <ssid> <pass> | names <store> <salesperson> | token <jwt> | rec-clear yes\n");
+               "          wifi <ssid> <pass> | names <store> <salesperson> | devid <id> | token <jwt> | rec-clear yes\n");
     }
 }
 

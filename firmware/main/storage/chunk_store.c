@@ -72,14 +72,16 @@ bool chunk_meta_save(uint32_t seq, cJSON *meta)
 
 static cJSON *new_meta(uint32_t seq, bool known_start)
 {
-    char store[33], sales[33], iso[24] = "";
+    char store[33], sales[33], devid[40], iso[24] = "";
     config_get_names(store, sizeof(store), sales, sizeof(sales));
+    config_get_backend_id(devid, sizeof(devid));
     if (known_start) timekeep_iso(iso, sizeof(iso));
     cJSON *m = cJSON_CreateObject();
     cJSON_AddNumberToObject(m, "seq", seq);
     cJSON_AddStringToObject(m, "device_id", config_device_id());
     cJSON_AddStringToObject(m, "store", store);
     cJSON_AddStringToObject(m, "salesperson", sales);
+    cJSON_AddStringToObject(m, "smaarthi_device_id", devid);
     cJSON_AddNumberToObject(m, "boot_id", config_boot_id());
     cJSON_AddNumberToObject(m, "start_uptime_ms", known_start ? (double)(esp_timer_get_time() / 1000) : -1);
     cJSON_AddStringToObject(m, "start_utc", iso);

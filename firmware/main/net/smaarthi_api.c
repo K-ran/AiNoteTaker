@@ -168,14 +168,15 @@ api_result_t api_create_asset(const char *token, const char *key, const char *mi
     return r;
 }
 
-api_result_t api_create_conversation(const char *token, const char *asset_id, char *conv_id_out, size_t len,
-                                     char *media_url_out, size_t url_len)
+api_result_t api_create_conversation(const char *token, const char *asset_id, const char *device_id,
+                                     char *conv_id_out, size_t len, char *media_url_out, size_t url_len)
 {
     cJSON *req = request("CreateConversation",
         "mutation CreateConversation($input: CreateConversationInput!) {"
         " createConversation(input: $input) { id media { url } } }");
     cJSON *input = cJSON_AddObjectToObject(cJSON_AddObjectToObject(req, "variables"), "input");
     cJSON_AddStringToObject(input, "mediaId", asset_id);
+    if (device_id && device_id[0]) cJSON_AddStringToObject(input, "deviceId", device_id);
     cJSON *root, *obj = NULL;
     api_result_t r = graphql(token, req, "createConversation", &root, &obj);
     cJSON_Delete(req);

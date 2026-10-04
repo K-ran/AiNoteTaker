@@ -20,6 +20,7 @@ api_result_t api_put_file(const char *url, const char *path, const char *mime);
 api_result_t api_create_asset(const char *token, const char *key, const char *mime, const char *file_name,
                               char *asset_id_out, size_t len);
 // media_url_out receives the conversation's media URL when the backend returns one (else "").
-api_result_t api_create_conversation(const char *token, const char *asset_id, char *conv_id_out, size_t len,
-                                     char *media_url_out, size_t url_len);
+// device_id: Smaarthi deviceId; omitted from the request when empty.
+api_result_t api_create_conversation(const char *token, const char *asset_id, const char *device_id,
+                                     char *conv_id_out, size_t len, char *media_url_out, size_t url_len);
 const char *api_result_name(api_result_t r);

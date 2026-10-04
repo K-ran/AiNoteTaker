@@ -27,7 +27,7 @@ static const char *TAG = "setup";
 typedef enum { CMD_START, CMD_STOP, CMD_TEST } cmd_t;
 
 typedef struct {                       // form values waiting for a successful Wi-Fi test
-    char ssid[33], pass[65], store[33], sales[33];
+    char ssid[33], pass[65], store[33], sales[33], devid[40];
     char token[1536];
 } pending_t;
 
@@ -55,12 +55,13 @@ static const char PAGE[] =
     "<label>Wi-Fi password</label><input name=pass type=password maxlength=64>"
     "<label>Store name</label><input name=store maxlength=32 required>"
     "<label>Salesperson</label><input name=sales maxlength=32 required>"
+    "<label>Smaarthi device ID</label><input name=devid maxlength=39 autocapitalize=off autocorrect=off spellcheck=false placeholder='from the project lead, starts with cm'>"
     "<label>API token <small>(leave empty to keep the current one)</small></label>"
     "<textarea name=token rows=3></textarea>"
     "<button>Save and connect</button></form><div id=r>Fill in the form and press Save.</div>"
     "<script>"
     "fetch('/info').then(r=>r.json()).then(i=>{d.textContent=i.device_id+' \\u00b7 firmware '+i.fw+(i.token?' \\u00b7 token set':' \\u00b7 no token');"
-    "f.store.value=i.store;f.sales.value=i.sales;"
+    "f.store.value=i.store;f.sales.value=i.sales;f.devid.value=i.devid;"
     "i.networks.forEach(n=>{let e=document.createElement('option');e.value=e.textContent=n;s.appendChild(e)})});"
     "f.onsubmit=e=>{e.preventDefault();let p=new URLSearchParams(new FormData(f));p.set('ssid',o.value||s.value);"
     "r.textContent='Saving...';fetch('/save',{method:'POST',body:p}).then(x=>x.text()).then(t=>{r.textContent=t;poll()})};"
@@ -116,14 +117,16 @@ static esp_err_t page_get(httpd_req_t *req)
 static esp_err_t info_get(httpd_req_t *req)
 {
     REQUIRE_HOTSPOT(req);
-    char store[33], sales[33];
+    char store[33], sales[33], devid[40];
     config_get_names(store, sizeof(store), sales, sizeof(sales));
+    config_get_backend_id(devid, sizeof(devid));
     bool has_token = config_has_token();          // never echo the token itself
     cJSON *j = cJSON_CreateObject();
     cJSON_AddStringToObject(j, "device_id", config_device_id());
     cJSON_AddStringToObject(j, "fw", esp_app_get_description()->version);
     cJSON_AddStringToObject(j, "store", store);
     cJSON_AddStringToObject(j, "sales", sales);
+    cJSON_AddStringToObject(j, "devid", devid);
     cJSON_AddBoolToObject(j, "token", has_token);
     cJSON_AddItemToObject(j, "networks", cJSON_Parse(s_networks_json ? s_networks_json : "[]"));
     char *s = cJSON_PrintUnformatted(j);
@@ -183,6 +186,7 @@ static esp_err_t save_post(httpd_req_t *req)
               field(body, "pass", p->pass, sizeof(p->pass), scratch, MAX_BODY) &&
               field(body, "store", p->store, sizeof(p->store), scratch, MAX_BODY) &&
               field(body, "sales", p->sales, sizeof(p->sales), scratch, MAX_BODY) &&
+              field(body, "devid", p->devid, sizeof(p->devid), scratch, MAX_BODY) &&
               field(body, "token", p->token, sizeof(p->token), scratch, MAX_BODY);
     bool complete = ok && p->ssid[0] && p->store[0] && p->sales[0];
     xSemaphoreGive(s_lock);
@@ -290,9 +294,11 @@ static void do_test(void)
         config_set_wifi(p->ssid, p->pass);
         config_set_names(p->store, p->sales);
         bool token_ok = !p->token[0] || config_set_token(p->token) == ESP_OK;
-        set_result(token_ok ? "Connected to %s. Setup done: the hotspot closes in 30 s."
-                            : "Connected to %s, but the API token was not accepted (invalid characters).", p->ssid);
-        event_log("wifi_updated", "ssid=%s store=%s sales=%s token=%s", p->ssid, p->store, p->sales,
+        bool devid_ok = config_set_backend_id(p->devid) == ESP_OK;   // empty clears it
+        set_result(!token_ok ? "Connected to %s, but the API token was not accepted (invalid characters)."
+                   : !devid_ok ? "Connected to %s, but the device ID was not accepted (lowercase letters and digits only)."
+                   : "Connected to %s. Setup done: the hotspot closes in 30 s.", p->ssid);
+        event_log("wifi_updated", "ssid=%s store=%s sales=%s devid=%s token=%s", p->ssid, p->store, p->sales, p->devid,
                   p->token[0] ? (token_ok ? "updated" : "invalid") : "kept");
         esp_timer_stop(s_close_timer);
         esp_timer_start_once(s_close_timer, 30 * 1000000LL);   // let the page show the result

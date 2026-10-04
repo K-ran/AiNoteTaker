@@ -18,6 +18,7 @@ typedef struct {
     char wifi_pass[65];
     char store[33];
     char salesperson[33];
+    char backend_id[40];       // Smaarthi deviceId
     char api_token[1536];      // Smaarthi bearer token (P0: shared low-privilege user)
 } device_config_t;
 
@@ -59,15 +60,17 @@ esp_err_t config_init(void)
     load_str("store", s_cfg.store, sizeof(s_cfg.store));
     load_str("sales", s_cfg.salesperson, sizeof(s_cfg.salesperson));
     load_str("token", s_cfg.api_token, sizeof(s_cfg.api_token));
+    load_str("devid", s_cfg.backend_id, sizeof(s_cfg.backend_id));
 
     nvs_get_u32(s_nvs, "boot", &s_boot_id);
     s_boot_id++;
     nvs_set_u32(s_nvs, "boot", s_boot_id);
     nvs_commit(s_nvs);
 
-    ESP_LOGI(TAG, "%s boot %lu wifi=%s store=%s sales=%s token=%s", s_cfg.device_id,
+    ESP_LOGI(TAG, "%s boot %lu wifi=%s store=%s sales=%s devid=%s token=%s", s_cfg.device_id,
              (unsigned long)s_boot_id, s_cfg.wifi_ssid[0] ? s_cfg.wifi_ssid : "(none)",
-             s_cfg.store, s_cfg.salesperson, s_cfg.api_token[0] ? "set" : "(none)");
+             s_cfg.store, s_cfg.salesperson, s_cfg.backend_id[0] ? s_cfg.backend_id : "(none)",
+             s_cfg.api_token[0] ? "set" : "(none)");
     return ESP_OK;
 }
 
@@ -129,6 +132,25 @@ esp_err_t config_set_token(const char *token)
     explicit_bzero(tmp, n);
     free(tmp);
     return err;
+}
+
+esp_err_t config_set_backend_id(const char *id)
+{
+    while (isspace((unsigned char)*id)) id++;
+    char tmp[sizeof(s_cfg.backend_id)];
+    size_t n = strlcpy(tmp, id, sizeof(tmp));
+    if (n >= sizeof(tmp)) return ESP_ERR_INVALID_SIZE;
+    while (n && isspace((unsigned char)tmp[n - 1])) tmp[--n] = 0;
+    for (size_t i = 0; i < n; i++)                 // backend ids are lowercase alphanumerics
+        if (!isalnum((unsigned char)tmp[i])) return ESP_ERR_INVALID_ARG;
+    return set_field(s_cfg.backend_id, sizeof(s_cfg.backend_id), "devid", tmp);
+}
+
+void config_get_backend_id(char *buf, size_t len)
+{
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    strlcpy(buf, s_cfg.backend_id, len);
+    xSemaphoreGive(s_lock);
 }
 
 bool config_copy_token(char *buf, size_t len)
