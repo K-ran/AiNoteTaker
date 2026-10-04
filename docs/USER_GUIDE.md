@@ -76,16 +76,18 @@ The buttons sit on the edge of the board. KEY 1 is nearest the brass standoff, K
 
 - **Nothing to start.** The device records whenever it's on. Wi-Fi switches on only to upload, every 15 minutes, to save battery.
 - **Charge** it at the end of each shift.
-- **If the store changes its Wi-Fi password**, repeat step 2. Recordings wait on the card in the meantime, so nothing is lost.
+- **To change the Wi-Fi, store, salesperson or Smaarthi device ID later**, repeat step 2. The page shows the current values, so change only what you need. Recordings wait on the card in the meantime, so nothing is lost.
 
 ## 6. Check the recordings
 
-Each 10-minute file becomes a conversation in Smaarthi, named so you can tell where it came from:
+Each 10-minute file becomes a conversation in Smaarthi, linked to the device's Smaarthi device ID and named so you can tell where it came from:
 
 ```
 nt-288485b2ae28_Indiranagar_Priya_00000140_20261003T162355Z.ogg
-device id       store       person seq      start time (UTC)
+board id        store       person seq      start time (UTC)
 ```
+
+The board id (`nt-` plus 12 characters) is built into the hardware and never changes; the same characters end the hotspot name `NoteTaker-xxxx`. It is separate from the Smaarthi device ID you enter on the setup page.
 
 Files are deleted from the device only after Smaarthi has them.
 
