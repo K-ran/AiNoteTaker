@@ -43,7 +43,7 @@ Updating a board that already runs P0? Write `notetaker-p0-0.1.3-app.bin` at `0x
 4. Pick the store Wi-Fi (or type its name), then enter its password, the store name, the name of the person carrying the device, the **Smaarthi device ID**, and the API token. Leave the token empty if the device already has one.
 5. Press **Save and connect**. The device tests the Wi-Fi first and saves nothing unless it connects. On success the hotspot closes after 30 seconds and the white blink returns.
 
-<img src="images/setup-page.png" alt="Setup page at 192.168.4.1, with fields for store Wi-Fi, password, store name, salesperson, Smaarthi device ID and API token" width="300">
+<img src="images/setup-page-0.1.3.png" alt="Setup page at 192.168.4.1, with fields for store Wi-Fi, password, store name, salesperson, Smaarthi device ID and API token" width="300">
 
 Afterwards, reconnect your phone to its normal Wi-Fi.
 
@@ -83,7 +83,7 @@ The buttons sit on the edge of the board. KEY 1 is nearest the brass standoff, K
 Each 10-minute file becomes a conversation in Smaarthi, linked to the device's Smaarthi device ID and named so you can tell where it came from:
 
 ```
-nt-288485b2ae28_Indiranagar_Priya_00000140_20261003T162355Z.ogg
+nt-288485b2ae28_Indiranagar_Karan_00000140_20261003T162355Z.ogg
 board id        store       person seq      start time (UTC)
 ```
 
