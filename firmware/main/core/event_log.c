@@ -11,6 +11,7 @@
 #include "app_config.h"
 #include "device_config.h"
 #include "timekeep.h"
+#include "telemetry.h"
 
 static const char *TAG = "event";
 static bool s_sd_ok;
@@ -39,7 +40,35 @@ void event_log_init(void)
     s_lock = xSemaphoreCreateMutex();
 }
 
-void event_log_set_sd(bool sd_ok) { s_sd_ok = sd_ok; }
+void event_log_set_sd(bool sd_ok)
+{
+    s_sd_ok = sd_ok;
+    telemetry_set_sd(sd_ok);
+}
+
+// Local event name -> telemetry event. Names not listed stay local only.
+static const struct { const char *local, *name; tel_severity_t sev; } MAP[] = {
+    {"boot", "device.boot", TEL_INFO},
+    {"boot_crash", "device.boot", TEL_ERROR},
+    {"power_cut_recovered", "storage.power_cut_recovered", TEL_WARN},
+    {"sd_fault", "storage.sd_fault", TEL_ERROR},
+    {"sd_full", "storage.sd_full", TEL_WARN},
+    {"privacy_pause_on", "recording.paused", TEL_INFO},
+    {"privacy_pause_off", "recording.resumed", TEL_INFO},
+    {"buffer_overrun", "audio.buffer_overrun", TEL_WARN},
+    {"encoder_fail", "audio.encoder_failed", TEL_ERROR},
+    {"uploaded", "upload.completed", TEL_INFO},
+    {"upload_failed", "upload.failed", TEL_WARN},
+    {"upload_rejected", "upload.quarantined", TEL_ERROR},
+    {"auth_failed", "auth.failed", TEL_ERROR},
+    {"wifi_fail", "wifi.connect_failed", TEL_WARN},
+    {"provisioning_entered", "setup.opened", TEL_INFO},
+    {"provisioning_closed", "setup.closed", TEL_INFO},
+    {"wifi_updated", "setup.saved", TEL_INFO},
+    {"wifi_setup_failed", "setup.failed", TEL_WARN},
+    {"time_synced", "time.synced", TEL_DEBUG},
+    {"ota_result", "firmware.confirmed", TEL_INFO},
+};
 
 void event_log(const char *event, const char *fmt, ...)
 {
@@ -59,11 +88,7 @@ void event_log(const char *event, const char *fmt, ...)
     xSemaphoreTake(s_lock, portMAX_DELAY);
     append(LOG_DIR "/EVENTS.LOG", line);
     xSemaphoreGive(s_lock);
-}
 
-void event_log_status(const char *json_line)
-{
-    xSemaphoreTake(s_lock, portMAX_DELAY);
-    append(LOG_DIR "/STATUS.LOG", json_line);
-    xSemaphoreGive(s_lock);
+    for (size_t i = 0; i < sizeof(MAP) / sizeof(MAP[0]); i++)
+        if (!strcmp(MAP[i].local, event)) { telemetry_event(MAP[i].name, MAP[i].sev, detail, NULL); break; }
 }

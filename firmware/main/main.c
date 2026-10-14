@@ -18,6 +18,7 @@
 #include "buttons.h"
 #include "battery.h"
 #include "console.h"
+#include "telemetry.h"
 #include "setup_portal.h"
 #include "esp_heap_caps.h"
 #include "cJSON.h"
@@ -42,8 +43,12 @@ void app_main(void)
     battery_init();
     timekeep_init(esp_ret_i2c_handle());
 
+    telemetry_init();                    // before the SD mount, so recovery events are captured
     bool sd_ok = chunk_store_init();
-    event_log("boot", "fw=%s reset=%d sd=%d", esp_app_get_description()->version, esp_reset_reason(), sd_ok);
+    esp_reset_reason_t rr = esp_reset_reason();
+    bool crashed = rr == ESP_RST_PANIC || rr == ESP_RST_INT_WDT || rr == ESP_RST_TASK_WDT ||
+                   rr == ESP_RST_WDT || rr == ESP_RST_BROWNOUT;
+    event_log(crashed ? "boot_crash" : "boot", "fw=%s reset=%d sd=%d", esp_app_get_description()->version, rr, sd_ok);
     if (!sd_ok) {
         event_log("sd_fault", "no card: not recording");
         status_led_set(LED_PROBLEM_SD, true);
@@ -54,6 +59,7 @@ void app_main(void)
     wifi_link_init();
     setup_portal_init();
     uplink_start();
+    telemetry_start();
     buttons_start();
     console_start();
     ESP_LOGI(TAG, "%s ready", config_device_id());

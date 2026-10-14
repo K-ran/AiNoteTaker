@@ -6,3 +6,4 @@
 void uplink_start(void);
 void uplink_trigger(void);        // run a window now (console, setup success)
 bool uplink_healthy(void);        // uploads current, no auth problem
+void *uplink_task_handle(void);   // TaskHandle_t, for stack telemetry

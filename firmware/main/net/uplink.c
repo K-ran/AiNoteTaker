@@ -22,6 +22,8 @@
 #include "recorder.h"
 #include "capture.h"
 #include "battery.h"
+#include "telemetry.h"
+#include <sys/stat.h>
 
 static const char *TAG = "uplink";
 static TaskHandle_t s_task;
@@ -106,6 +108,8 @@ static api_result_t upload_chunk(uint32_t seq, const char *token, const char *ba
         free(url);
     }
     if (r == API_OK && in_state(m, "DONE")) {
+        struct stat st;
+        if (stat(path, &st) == 0) telemetry_note_upload(st.st_size);
         chunk_delete(seq);                      // the only path that deletes audio: after the conversation exists
     } else if (r == API_REJECT) {
         int attempts = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(m, "attempts")) + 1;
@@ -120,42 +124,6 @@ static api_result_t upload_chunk(uint32_t seq, const char *token, const char *ba
     return r;
 }
 
-static void write_status(int backlog)
-{
-    uint32_t total_mb, free_mb;
-    chunk_store_space(&total_mb, &free_mb);
-    char t[24];
-    timekeep_iso(t, sizeof(t));
-    cJSON *s = cJSON_CreateObject();
-    cJSON_AddStringToObject(s, "t", t);
-    cJSON_AddStringToObject(s, "device_id", config_device_id());
-    cJSON_AddStringToObject(s, "fw_version", esp_app_get_description()->version);
-    cJSON_AddNumberToObject(s, "boot_id", config_boot_id());
-    cJSON_AddNumberToObject(s, "uptime_s", (double)(esp_timer_get_time() / 1000000));
-    cJSON_AddNumberToObject(s, "reset_reason", esp_reset_reason());
-    cJSON_AddNumberToObject(s, "battery_mv", battery_mv());
-    cJSON_AddBoolToObject(s, "sd_present", chunk_store_ok());
-    cJSON_AddNumberToObject(s, "sd_total_mb", total_mb);
-    cJSON_AddNumberToObject(s, "sd_free_mb", free_mb);
-    cJSON_AddNumberToObject(s, "backlog_files", backlog);
-    cJSON_AddStringToObject(s, "rec_state", recorder_state_name());
-    cJSON_AddNumberToObject(s, "audio_level_dbfs", (int)capture_level_dbfs());
-    cJSON_AddNumberToObject(s, "buffer_overruns", capture_overruns());
-    cJSON_AddNumberToObject(s, "last_seq", recorder_last_seq());
-    cJSON_AddNumberToObject(s, "wifi_rssi_dbm", wifi_link_rssi());
-    cJSON_AddStringToObject(s, "last_upload_at", s_last_upload_iso);
-    cJSON_AddStringToObject(s, "time_source", timekeep_source_name());
-    cJSON_AddNumberToObject(s, "heap_internal_free", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-    cJSON_AddNumberToObject(s, "heap_internal_min", heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
-    cJSON_AddNumberToObject(s, "heap_internal_largest", heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
-    cJSON_AddNumberToObject(s, "heap_psram_free", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    cJSON_AddNumberToObject(s, "stack_free_recorder", uxTaskGetStackHighWaterMark(recorder_task_handle()));
-    cJSON_AddNumberToObject(s, "stack_free_uplink", uxTaskGetStackHighWaterMark(NULL));
-    char *line = cJSON_PrintUnformatted(s);
-    if (line) { event_log_status(line); ESP_LOGI(TAG, "status %s", line); free(line); }
-    cJSON_Delete(s);
-}
-
 static void run_window(void)
 {
     int backlog = chunk_count_ready();
@@ -164,47 +132,55 @@ static void run_window(void)
     if (!ssid[0] || !config_has_token()) {
         ESP_LOGW(TAG, "not configured (wifi=%d token=%d); %d chunks waiting", !!ssid[0], config_has_token(), backlog);
         explicit_bzero(pass, sizeof(pass));
-        write_status(backlog);
         return;
     }
     if (!wifi_link_session_begin(5000)) {         // setup portal is testing: try again next window
         explicit_bzero(pass, sizeof(pass));
         return;
     }
+    int64_t t0 = esp_timer_get_time();
     bool online = wifi_link_connect(ssid, pass, WIFI_CONNECT_TIMEOUT_S * 1000);
+    int connect_ms = (int)((esp_timer_get_time() - t0) / 1000);
     explicit_bzero(pass, sizeof(pass));
     if (!online) {
         event_log("wifi_fail", "reason=%d backlog=%d", wifi_link_last_reason(), backlog);
-        write_status(backlog);
+        telemetry_note_window(0, connect_ms, wifi_link_last_reason(), "wifi");
         wifi_link_session_end();
         return;
     }
+    bool had_time = !strcmp(timekeep_source_name(), "ntp");
     timekeep_start_sntp();
     timekeep_wait_sync(5000);
+    if (!had_time && !strcmp(timekeep_source_name(), "ntp")) event_log("time_synced", "%s", "ntp");
 
     char *token = heap_caps_malloc(TOKEN_MAX, MALLOC_CAP_INTERNAL);
     char backend_id[40];
     config_get_backend_id(backend_id, sizeof(backend_id));
     uint32_t seqs[BATCH];
     int n = chunk_list_ready(seqs, BATCH), done = 0;
-    api_result_t r = API_OK;
+    api_result_t r = API_OK, tr = API_LOCAL;
     if (token && config_copy_token(token, TOKEN_MAX)) {
         for (int i = 0; i < n; i++) {
             r = upload_chunk(seqs[i], token, backend_id);
             if (r == API_OK) done++;
             else if (r == API_NET || r == API_SERVER || r == API_AUTH) break;   // retry next window
         }
+        if (r != API_OK && r != API_AUTH)
+            event_log("upload_failed", "result=%s uploaded=%d of %d", api_result_name(r), done, n);
+        bool auth = (r == API_AUTH);
+        if (auth && !atomic_load(&s_auth_problem)) event_log("auth_failed", "%s", "uploads paused until the token is fixed");
+        atomic_store(&s_auth_problem, auth);
+        if (done) timekeep_iso(s_last_upload_iso, sizeof(s_last_upload_iso));
+        telemetry_note_window(wifi_link_rssi(), connect_ms, 0, r == API_OK ? "" : api_result_name(r));
+        // Telemetry last, so this window's own events go out with it.
+        tr = telemetry_flush(token, backend_id);
     }
     if (token) { explicit_bzero(token, TOKEN_MAX); free(token); }
 
-    bool auth = (r == API_AUTH);
-    if (auth && !atomic_load(&s_auth_problem)) event_log("auth_failed", "%s", "uploads paused until the token is fixed");
-    atomic_store(&s_auth_problem, auth);
-    if (done) timekeep_iso(s_last_upload_iso, sizeof(s_last_upload_iso));
     int left = chunk_count_ready();
     if (left == 0) atomic_store(&s_last_ok_us, esp_timer_get_time());
-    ESP_LOGI(TAG, "window: uploaded %d, %d left (%s)", done, left, api_result_name(r));
-    write_status(left);
+    ESP_LOGI(TAG, "window: uploaded %d, %d left (%s); telemetry %s, %d pending", done, left, api_result_name(r),
+             api_result_name(tr), telemetry_pending());
     wifi_link_session_end();
     if (left && done == n && n == BATCH) uplink_trigger();      // more than one batch waiting: keep going
 }
@@ -226,6 +202,7 @@ void uplink_start(void)
 }
 
 void uplink_trigger(void) { if (s_task) xTaskNotifyGive(s_task); }
+void *uplink_task_handle(void) { return s_task; }
 
 bool uplink_healthy(void)
 {

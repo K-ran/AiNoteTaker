@@ -3,6 +3,7 @@
 //   1. requestAssetUploadPresignedUrl  2. PUT to R2  3. createAsset  4. createConversation
 #include <stddef.h>
 #include <stdbool.h>
+#include "cJSON.h"
 
 typedef enum {
     API_OK,
@@ -23,4 +24,7 @@ api_result_t api_create_asset(const char *token, const char *key, const char *mi
 // device_id: Smaarthi deviceId; omitted from the request when empty.
 api_result_t api_create_conversation(const char *token, const char *asset_id, const char *device_id,
                                      char *conv_id_out, size_t len, char *media_url_out, size_t url_len);
+// Sends one telemetry batch. `input` (a DeviceTelemetryInput object) is consumed.
+// On API_OK, *heartbeats/*events receive the counts of newly stored records.
+api_result_t api_report_telemetry(const char *token, cJSON *input, int *heartbeats, int *events);
 const char *api_result_name(api_result_t r);

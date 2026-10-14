@@ -29,6 +29,16 @@
 #define SMAARTHI_GRAPHQL_URL    "https://backboard.smaarthi.com/graphql"
 #define AUDIO_MIME              "audio/ogg"
 
+// Telemetry (reportDeviceTelemetry). Heartbeats are captured on their own clock and
+// sent with everything else in the next upload window: telemetry never turns Wi-Fi on.
+#define HEARTBEAT_S             (5 * 60)
+#define TELEMETRY_BATCH_RECORDS 200         // backend's recommended maximum per request
+#define TELEMETRY_BATCH_BYTES   (48 * 1024)
+#define TELEMETRY_BATCHES_MAX   5           // per window; the backend allows 30 req/min per user
+#define TELEMETRY_SOFT_CAP      (2 * 1024 * 1024)   // queue size: above this, heartbeats are dropped
+#define TELEMETRY_HARD_CAP      (3 * 1024 * 1024)   // above this, events are dropped too
+#define TELEMETRY_RAM_RECORDS   64          // queue without an SD card
+
 // Staff controls
 #define PAUSE_AUTO_RESUME_S     (10 * 60)
 #define SETUP_HOLD_S            10

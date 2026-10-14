@@ -50,7 +50,8 @@ static api_result_t classify_graphql_error(cJSON *root, const char *field)
     const char *msg = cJSON_GetStringValue(cJSON_GetObjectItem(e0, "message"));
     const char *code = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(e0, "extensions"), "code"));
     ESP_LOGW(TAG, "%s: GraphQL error code=%s msg=%.120s", field, code ? code : "-", msg ? msg : "(no data)");
-    if (code && (!strcmp(code, "UNAUTHENTICATED") || !strcmp(code, "FORBIDDEN"))) return API_AUTH;
+    if (code && (!strcmp(code, "UNAUTHENTICATED") || !strcmp(code, "UNAUTHORIZED") || !strcmp(code, "FORBIDDEN")))
+        return API_AUTH;
     if (code && (!strcmp(code, "BAD_USER_INPUT") || !strcmp(code, "GRAPHQL_VALIDATION_FAILED"))) return API_REJECT;
     return API_SERVER;
 }
@@ -145,6 +146,23 @@ api_result_t api_request_upload_url(const char *token, const char *file_name, co
         r = API_SERVER;
     } else if (!(*url_out = strdup(url))) {
         r = API_LOCAL;
+    }
+    cJSON_Delete(root);
+    return r;
+}
+
+api_result_t api_report_telemetry(const char *token, cJSON *input, int *heartbeats, int *events)
+{
+    cJSON *req = request("ReportDeviceTelemetry",
+        "mutation ReportDeviceTelemetry($input: DeviceTelemetryInput!) {"
+        " reportDeviceTelemetry(input: $input) { heartbeatsAccepted eventsAccepted receivedAt } }");
+    cJSON_AddItemToObject(cJSON_AddObjectToObject(req, "variables"), "input", input);
+    cJSON *root, *obj = NULL;
+    api_result_t r = graphql(token, req, "reportDeviceTelemetry", &root, &obj);
+    cJSON_Delete(req);
+    if (r == API_OK) {
+        *heartbeats = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(obj, "heartbeatsAccepted"));
+        *events = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(obj, "eventsAccepted"));
     }
     cJSON_Delete(root);
     return r;

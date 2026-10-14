@@ -17,6 +17,7 @@
 #include "setup_portal.h"
 #include "timekeep.h"
 #include "app_config.h"
+#include "telemetry.h"
 
 #define LINE_MAX_LEN 1800                       // a JWT plus the command
 
@@ -36,6 +37,7 @@ static void cmd_status(void)
     printf("sd %s %lu/%lu MB free  backlog %d  uploads %s  setup %s\n", chunk_store_ok() ? "ok" : "MISSING",
            (unsigned long)free_mb, (unsigned long)total, chunk_count_ready(),
            uplink_healthy() ? "healthy" : "STALE", setup_portal_active() ? "open" : "closed");
+    printf("telemetry pending ~%d\n", telemetry_pending());
     printf("heap internal %u free (min %u), psram %u free\n",
            (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
            (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
@@ -48,6 +50,7 @@ static void handle(char *line)
     if (arg) *arg++ = 0;
     if (!strcmp(line, "status")) cmd_status();
     else if (!strcmp(line, "upload")) { uplink_trigger(); printf("upload window triggered\n"); }
+    else if (!strcmp(line, "tq")) telemetry_dump(arg ? atoi(arg) : 3);
     else if (!strcmp(line, "rotate")) { recorder_rotate(); printf("closing current chunk\n"); }
     else if (!strcmp(line, "pause")) recorder_set_paused(true);
     else if (!strcmp(line, "resume")) recorder_set_paused(false);
@@ -72,7 +75,7 @@ static void handle(char *line)
         explicit_bzero(arg, n);
     } else {
         printf("commands: status | upload | rotate | pause | resume | setup | setup-off | reboot |\n"
-               "          wifi <ssid> <pass> | names <store> <salesperson> | devid <id> | token <jwt> | rec-clear yes\n");
+               "          wifi <ssid> <pass> | names <store> <salesperson> | devid <id> | token <jwt> | tq [n] | rec-clear yes\n");
     }
 }
 

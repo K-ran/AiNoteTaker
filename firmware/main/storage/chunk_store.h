@@ -27,6 +27,8 @@ bool chunk_finish(chunk_t *c, uint32_t duration_ms, uint64_t bytes);   // .PRT -
 
 int chunk_list_ready(uint32_t *seqs, int max);   // oldest `max` finished chunks
 int chunk_count_ready(void);
+// Finished chunks waiting: count, total bytes, and the oldest one's file time (0 if none).
+void chunk_store_backlog(uint32_t *files, uint64_t *bytes, int64_t *oldest_mtime);
 void chunk_path(uint32_t seq, const char *ext, char *out, size_t len);
 
 cJSON *chunk_meta_load(uint32_t seq);        // caller frees; NULL if missing

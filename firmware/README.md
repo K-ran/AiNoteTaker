@@ -52,9 +52,26 @@ old_demos/            earlier experiments, not built
 - R2's ETag is checked against the MD5 of what was sent.
 - Only explicit validation errors (`BAD_USER_INPUT`) count towards quarantine. Network, server and unknown errors retry indefinitely.
 
+## Telemetry (since 0.1.4)
+
+`core/telemetry.c` reports to Smaarthi's `reportDeviceTelemetry` mutation, using the Smaarthi `deviceId`.
+
+- **Heartbeat every 5 min**: firmware, uptime, reset reason, recording state and level, chunks recorded, SD and backlog, uploads, Wi-Fi (RSSI, connect time, last failure), time source, heap and stack, chip temperature. Battery appears only once the battery-sense resistor is fitted.
+- **Events**, mapped from `event_log()` names in `event_log.c`:
+  - `device.boot` (Error after a crash, watchdog or brownout)
+  - `storage.*`, `recording.paused/resumed`, `audio.*`
+  - `upload.completed/failed/quarantined`, `auth.failed`, `wifi.connect_failed`
+  - `setup.*`, `time.synced`, `firmware.confirmed`
+- **Delivery**: records are queued in `LOG/TQ.LOG` on the SD card, or in RAM without a card. Each gets a UUID `eventId` and a `bootId` (`<boardId>-<bootCount>`) when captured. They're sent at the end of each upload window, up to 200 records per request and 5 requests per window. Telemetry never turns Wi-Fi on by itself.
+- **Errors**:
+  - Auth, ownership, throttling and network errors keep the batch for the next window.
+  - Validation errors drop the batch.
+  - Above 2 MB the queue drops new heartbeats; above 3 MB it drops events too.
+- **Clock not set**: records captured before the clock is set get their time filled in when sent, or are flagged `timeEstimated`.
+
 ## Developer console (USB serial, 115200)
 
-`status | upload | rotate | pause | resume | setup | setup-off | reboot | wifi <ssid> <pass> | names <store> <sales> | devid <smaarthi-device-id> | token <jwt> | rec-clear yes`
+`status | upload | rotate | pause | resume | setup | setup-off | reboot | wifi <ssid> <pass> | names <store> <sales> | devid <smaarthi-device-id> | token <jwt> | tq [n] | rec-clear yes`
 
 Pass secrets through the environment so they stay out of shell history and logs:
 

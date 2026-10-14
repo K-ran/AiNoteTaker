@@ -18,6 +18,7 @@
 #include "timekeep.h"
 #include "event_log.h"
 #include "status_led.h"
+#include "telemetry.h"
 
 static const char *TAG = "recorder";
 static atomic_int s_pause_req = -1;         // -1 none, 0 resume, 1 pause (set by any task)
@@ -130,6 +131,7 @@ static void recorder_task(void *arg)
             ogg_opus_end(&ogg);
             if (chunk_finish(&chunk, frames * 20, ogg.bytes_written)) {
                 atomic_store(&s_last_seq, chunk.seq);
+                telemetry_note_chunk_recorded();
                 confirm_firmware_once();
             }
             esp_opus_enc_close(enc);

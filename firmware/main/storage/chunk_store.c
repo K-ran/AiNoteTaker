@@ -301,6 +301,24 @@ int chunk_count_ready(void)
     return n;
 }
 
+void chunk_store_backlog(uint32_t *files, uint64_t *bytes, int64_t *oldest_mtime)
+{
+    *files = 0; *bytes = 0; *oldest_mtime = 0;
+    uint32_t *all = heap_caps_malloc(MAX_LIST * sizeof(uint32_t), MALLOC_CAP_SPIRAM);
+    if (!all || !s_ok) { free(all); return; }
+    int n = list_seqs(REC_DIR, "OGG", all, MAX_LIST);
+    for (int i = 0; i < n; i++) {
+        char p[48];
+        struct stat st;
+        chunk_path(all[i], "OGG", p, sizeof(p));
+        if (stat(p, &st) != 0) continue;
+        (*files)++;
+        *bytes += st.st_size;
+        if (!*oldest_mtime || st.st_mtime < *oldest_mtime) *oldest_mtime = st.st_mtime;
+    }
+    free(all);
+}
+
 void chunk_delete(uint32_t seq)
 {
     char p[48];

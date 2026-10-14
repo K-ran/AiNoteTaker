@@ -5,6 +5,7 @@ idf_component_register(
         "core/event_log.c"
         "core/timekeep.c"
         "core/console.c"
+        "core/telemetry.c"
         "board/rtc_pcf85063.c"
         "board/battery.c"
         "hardeware_driver/bsp_board.c"
