@@ -26,3 +26,7 @@ firmware/release/
 .cache/
 **/.cache/
 firmware/compile_commands.json
+
+# Local scratch files
+request.json
+*.local.*
