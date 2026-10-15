@@ -5,7 +5,7 @@ A battery-powered recorder a salesperson carries around the store. It records co
 | Folder | What's inside |
 | --- | --- |
 | [`firmware/`](firmware/README.md) | ESP-IDF firmware for the ESP32-S3 audio board (P0 pilot) |
-| [`docs/`](docs/) | [Field guide](docs/USER_GUIDE.md) (flash, set up, use) and [flashing details](docs/FLASHING.md) |
+| [`docs/`](docs/) | [Field guide](docs/USER_GUIDE.md) (flash, set up, use), [flashing details](docs/FLASHING.md), and the [telemetry guide](docs/TELEMETRY.md) (what each device reports) |
 | `server/` | Early local upload test server (pre-Smaarthi) |
 
 Release binaries are attached to the GitHub releases, not committed.

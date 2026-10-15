@@ -54,6 +54,8 @@ old_demos/            earlier experiments, not built
 
 ## Telemetry (since 0.1.4)
 
+Field and event reference for non-engineers: [docs/TELEMETRY.md](../docs/TELEMETRY.md).
+
 `core/telemetry.c` reports to Smaarthi's `reportDeviceTelemetry` mutation, using the Smaarthi `deviceId`.
 
 - **Heartbeat every 5 min**: firmware, uptime, reset reason, recording state and level, chunks recorded, SD and backlog, uploads, Wi-Fi (RSSI, connect time, last failure), time source, heap and stack, chip temperature. Battery appears only once the battery-sense resistor is fitted.
